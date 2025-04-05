@@ -156,6 +156,14 @@ export async function loginUserController(req, res) {
       });
     }
 
+    if (user.verify_email !== true) {
+      return res.status(400).json({
+        message: "Your email is not verify yet",
+        error: true,
+        success: false,
+      });
+    }
+
     const checkPassword = await bcryptjs.compare(password, user.password);
 
     if (!checkPassword) {
@@ -319,5 +327,287 @@ export async function removeImageFromCloudinary(req, res) {
     if (result) {
       res.status(200).send(result);
     }
+  }
+}
+
+// Update user details
+export async function updateUserDetails(req, res) {
+  try {
+    const { id } = req.userId;
+    const { name, email, mobile, password } = req.body;
+
+    const userExist = await UserModel.findById(id);
+
+    if (!userExist) {
+      return res.status(400).send("The user cannot be updated!");
+    }
+
+    let verifyCode = "";
+
+    if (email !== userExist.email) {
+      verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    let hashPassword = "";
+
+    if (password) {
+      const salt = await bcryptjs.genSalt(10);
+      hashPassword = await bcryptjs.hash(password, salt);
+    } else {
+      hashPassword = userExist.password;
+    }
+
+    const updateUser = await UserModel.findByIdAndUpdate(
+      id,
+      {
+        name: name,
+        mobile: mobile,
+        email: email,
+        verify_email: email !== userExist.email ? false : true,
+        password: hashPassword,
+        otp: verifyCode !== "" ? verifyCode : null,
+        otpExpires:
+          verifyCode !== "" ? new Date(Date.now() + 10 * 60 * 1000) : "",
+        name: name,
+      },
+      { new: true }
+    );
+
+    if (email !== userExist.email) {
+      await sendEmailFun(
+        email,
+        "Verify email from E-commerce",
+        "",
+        verificationEmail(name, verifyCode)
+      );
+    }
+
+    return res.json({
+      message: "User Updated successfully",
+      error: false,
+      success: true,
+      user: updateUser,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Forgot password
+export async function forgotPasswordController(req, res) {
+  try {
+    const { email } = req.body;
+
+    const user = await UserModel.findOne({ email: email });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Email not available",
+        error: true,
+        success: false,
+      });
+    } else {
+      let verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
+      let otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+      user.otp = verifyCode;
+      user.otpExpires = otpExpires;
+
+      await user.save();
+
+      await sendEmailFun(
+        email,
+        "Verify email from E-commerce",
+        "",
+        verificationEmail(user.name, verifyCode)
+      );
+
+      return res.json({
+        message: "Check your email",
+        error: false,
+        success: true,
+      });
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Verify password OTP
+export async function verifyForgotPasswordOtp(req, res) {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await UserModel.findOne({ email: email });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Email not available",
+        error: true,
+        success: false,
+      });
+    }
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        message: "Provide required field email, otp.",
+        error: true,
+        success: false,
+      });
+    }
+
+    if (otp !== user.otp) {
+      return res.status(400).json({
+        message: "Invailid OTP",
+        error: true,
+        success: false,
+      });
+    }
+
+    const currentTime = new Date().toISOString();
+
+    if (user.otpExpires < currentTime) {
+      return res.status(400).json({
+        message: "OTP is expired",
+        error: true,
+        success: false,
+      });
+    }
+
+    user.otp = "";
+    user.otpExpires = "";
+
+    await user.save();
+
+    return res.status(400).json({
+      message: "Verify OTP successfully",
+      error: false,
+      success: true,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Reset password
+export async function resetPassword(req, res) {
+  try {
+    const { email, newPassword, confirmPassword } = req.body;
+
+    if (!email || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        message: "Provide required fields email, newPassword, confirmPassword",
+      });
+    }
+
+    const user = await UserModel.findOne({ email: email });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Email not available",
+        error: true,
+        success: false,
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        message: "newPassword and confirmPassword must be same!",
+        error: true,
+        success: false,
+      });
+    }
+
+    const salt = await bcryptjs.genSalt(10);
+    const hashPassword = await bcryptjs.hash(confirmPassword, salt);
+
+    user.password = hashPassword;
+    await user.save();
+
+    return res.json({
+      message: "Password updated successfully!",
+      error: false,
+      success: true,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Refresh token
+export async function refreshToken(req, res) {
+  try {
+    const refreshToken =
+      req.cookies.refreshToken || req?.headers?.authorization?.split(" ")[1]; // [ Bearer token ]
+
+    if (!refreshToken) {
+      return res.status(401).json({ 
+        message: "Invalid token", 
+        error: true, 
+        success: false 
+      });
+    }
+
+    const verifyToken = await jwt.verify(refreshToken, process.env.SECRET_KEY_REFRESH_TOKEN);
+
+    if (!verifyToken) {
+      return res.status(401).json({ 
+        message: "Token is expired", 
+        error: true, 
+        success: false 
+      });
+    }
+
+    const userId = verifyToken?._id;
+    const newAccessToken = await generateAccessToken(userId);
+
+    const cookiesOption = {
+      htttpOnly: true,
+      secure: true,
+      sameSite: "none",
+    };
+
+    res.cookie("access_token", newAccessToken, cookiesOption);
+
+    return res.json({ 
+      message: "New access token generated", 
+      error: false, 
+      success: true,
+      data: {
+        accessToken: newAccessToken
+      } 
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Get login user details
+export async function userDetails(req, res) {
+  try {
+    const { id } = req.userId;
+
+    const user = await UserModel.findById(id).select('-password -refresh_token');
+
+    return res.status(401).json({ 
+      message: "User details", 
+      data: user,
+      error: false, 
+      success: true 
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
   }
 }
