@@ -156,7 +156,7 @@ export async function deleteCartItemQtyController(req, res) {
 
     await user.save();
 
-    return res.status(404).json({
+    return res.status(400).json({
       message: "Item removed",
       error: false,
       success: true,
