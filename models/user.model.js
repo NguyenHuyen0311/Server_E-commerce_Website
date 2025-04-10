@@ -20,8 +20,9 @@ const userSchema = mongoose.Schema(
       default: "",
     },
     mobile: {
-      type: Number,
+      type: String,
       default: null,
+      trim: true,
     },
     access_token: {
       type: String,
@@ -63,10 +64,10 @@ const userSchema = mongoose.Schema(
       },
     ],
     otp: {
-      type: String
+      type: String,
     },
     otpExpires: {
-      type: Date
+      type: Date,
     },
     role: {
       type: String,

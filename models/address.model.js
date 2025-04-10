@@ -2,15 +2,20 @@ import mongoose from "mongoose";
 
 const addressSchema = mongoose.Schema(
   {
+    name: {
+      type: String,
+      required: [true, "Provide name"],
+    },
     address_details: {
       type: String,
       default: "",
     },
-    pincode: {
+    position: {
       type: String,
+      default: "",
     },
     mobile: {
-      type: Number,
+      type: String,
       default: null,
     },
     status: {
