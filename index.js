@@ -12,6 +12,7 @@ import productRouter from './routes/product.route.js';
 import cartRouter from './routes/cart.route.js';
 import myWishlistRouter from './routes/myWishlist.route.js';
 import addressRouter from './routes/address.route.js';
+import homeSliderRouter from './routes/homeSlider.route.js';
 
 const app = express();
 app.use(cors());
@@ -37,6 +38,7 @@ app.use("/api/product", productRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/myWishlist", myWishlistRouter);
 app.use("/api/address", addressRouter);
+app.use("/api/homeSlider", homeSliderRouter);
 
 connectDB().then(() => {
     app.listen(process.env.PORT, () => {

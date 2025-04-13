@@ -649,7 +649,7 @@ export async function deleteProduct(req, res) {
 export async function deleteMultipleProducts(req, res) {
   const { ids } = req.body;
 
-  console.log(ids);
+  // console.log(ids);
 
   if (!ids || !Array.isArray(ids)) {
     return res.status(400).json({
@@ -945,7 +945,6 @@ export async function updateProductFlavor(req, res) {
       .json({ message: error.message || error, error: true, success: false });
   }
 }
-
 
 // Get product Weight
 export async function getProductWeight(req, res) {
