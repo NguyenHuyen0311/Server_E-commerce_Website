@@ -1,4 +1,6 @@
 import ProductModel from "../models/product.model.js";
+import productFlavorModel from "../models/productFlavor.model.js";
+import productWeightModel from "../models/productWeight.model.js";
 
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
@@ -66,6 +68,7 @@ export async function createProduct(req, res) {
       subCatName: req.body.subCatName,
       thirdSubCatId: req.body.thirdSubCatId,
       thirdSubCatName: req.body.thirdSubCatName,
+      category: req.body.category,
       countInStock: req.body.countInStock,
       rating: req.body.rating,
       isFeatured: req.body.isFeatured,
@@ -87,7 +90,7 @@ export async function createProduct(req, res) {
     imagesArr = [];
 
     res.status(200).json({
-      message: "Product created successfully",
+      message: "Thêm sản phẩm thành công!",
       error: false,
       success: true,
     });
@@ -606,7 +609,7 @@ export async function deleteProduct(req, res) {
 
     const images = product.images;
 
-    for (img of images) {
+    for (const img of images) {
       const imgUrl = img;
       const urlArr = imgUrl.split("/");
       const image = urlArr[urlArr.length - 1];
@@ -631,7 +634,57 @@ export async function deleteProduct(req, res) {
     }
 
     return res.status(200).json({
-      message: "Product deleted!",
+      message: "Đã xóa sản phẩm!",
+      error: false,
+      success: true,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Delete multiple products
+export async function deleteMultipleProducts(req, res) {
+  const { ids } = req.body;
+
+  console.log(ids);
+
+  if (!ids || !Array.isArray(ids)) {
+    return res.status(400).json({
+      message: "Invalid input",
+      error: true,
+      success: false,
+    });
+  }
+
+  for (let i = 0; i < ids?.length; i++) {
+    const product = await ProductModel.findById(ids[i]);
+
+    const images = product.images;
+    let img = "";
+
+    for (img of images) {
+      const imgUrl = img;
+      const urlArr = imgUrl.split("/");
+      const image = urlArr[urlArr.length - 1];
+
+      const imageName = image.split(".")[0];
+
+      if (imageName) {
+        cloudinary.uploader.destroy(imageName, (error, result) => {
+          console.log(error, result);
+        });
+      }
+    }
+  }
+
+  try {
+    await ProductModel.deleteMany({ _id: { $in: ids } });
+
+    return res.status(200).json({
+      message: "Xóa sản phẩm thành công!",
       error: false,
       success: true,
     });
@@ -657,7 +710,7 @@ export async function getProduct(req, res) {
       });
     }
 
-    return res.status(404).json({
+    return res.status(200).json({
       error: false,
       success: true,
       product: product,
@@ -734,7 +787,304 @@ export async function updateProduct(req, res) {
     imagesArr = [];
 
     return res.status(200).json({
-      message: "The product is updated!",
+      message: "Đã cập nhật sản phẩm!",
+      error: false,
+      success: true,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Get product flavor
+export async function getProductFlavor(req, res) {
+  try {
+    const productFlavor = await productFlavorModel.find();
+
+    if (!productFlavor) {
+      return res.status(400).json({
+        error: true,
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      error: false,
+      success: true,
+      data: productFlavor,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Get product flavor by id
+export async function getProductFlavorById(req, res) {
+  try {
+    const productFlavor = await productFlavorModel.findById(req.params.id);
+
+    if (!productFlavor) {
+      return res.status(400).json({
+        error: true,
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      error: false,
+      success: true,
+      data: productFlavor,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Create product flavor
+export async function createProductFlavor(req, res) {
+  try {
+    let productFlavors = new productFlavorModel({
+      name: req.body.name,
+    });
+
+    productFlavors = await productFlavors.save();
+
+    if (!productFlavors) {
+      res.status(500).json({
+        error: true,
+        success: false,
+        message: "Product Flavor not created",
+      });
+    }
+
+    res.status(200).json({
+      message: "Thêm hương vị sản phẩm thành công!",
+      error: false,
+      success: true,
+      productFlavor: productFlavors,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Delete product flavor
+export async function deleteProductFlavor(req, res) {
+  try {
+    const productFlavor = await productFlavorModel.findById(req.params.id);
+
+    if (!productFlavor) {
+      return res.status(404).json({
+        message: "Item not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    const deleteProductFlavor = await productFlavorModel.findByIdAndDelete(
+      req.params.id
+    );
+
+    if (!deleteProductFlavor) {
+      return res.status(404).json({
+        message: "Product Flavor not deleted",
+        error: true,
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Đã xóa hương vị sản phẩm!",
+      error: false,
+      success: true,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Update product flavor
+export async function updateProductFlavor(req, res) {
+  try {
+    const productFlavor = await productFlavorModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        name: req.body.name,
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!productFlavor) {
+      return res.status(404).json({
+        message: "Product flavor cannot be updated!",
+        error: true,
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Đã cập nhật hương vị sản phẩm!",
+      error: false,
+      success: true,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+
+// Get product Weight
+export async function getProductWeight(req, res) {
+  try {
+    const productWeight = await productWeightModel.find();
+
+    if (!productWeight) {
+      return res.status(400).json({
+        error: true,
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      error: false,
+      success: true,
+      data: productWeight,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Get product Weight by id
+export async function getProductWeightById(req, res) {
+  try {
+    const productWeight = await productWeightModel.findById(req.params.id);
+
+    if (!productWeight) {
+      return res.status(400).json({
+        error: true,
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      error: false,
+      success: true,
+      data: productWeight,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Create product Weight
+export async function createProductWeight(req, res) {
+  try {
+    let productWeights = new productWeightModel({
+      name: req.body.name,
+    });
+
+    productWeights = await productWeights.save();
+
+    if (!productWeights) {
+      res.status(500).json({
+        error: true,
+        success: false,
+        message: "Product Weight not created",
+      });
+    }
+
+    res.status(200).json({
+      message: "Thêm hương vị sản phẩm thành công!",
+      error: false,
+      success: true,
+      productWeight: productWeights,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Delete product Weight
+export async function deleteProductWeight(req, res) {
+  try {
+    const productWeight = await productWeightModel.findById(req.params.id);
+
+    if (!productWeight) {
+      return res.status(404).json({
+        message: "Item not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    const deleteProductWeight = await productWeightModel.findByIdAndDelete(
+      req.params.id
+    );
+
+    if (!deleteProductWeight) {
+      return res.status(404).json({
+        message: "Product Weight not deleted",
+        error: true,
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Đã xóa hương vị sản phẩm!",
+      error: false,
+      success: true,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Update product Weight
+export async function updateProductWeight(req, res) {
+  try {
+    const productWeight = await productWeightModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        name: req.body.name,
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!productWeight) {
+      return res.status(404).json({
+        message: "Product Weight cannot be updated!",
+        error: true,
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Đã cập nhật hương vị sản phẩm!",
       error: false,
       success: true,
     });

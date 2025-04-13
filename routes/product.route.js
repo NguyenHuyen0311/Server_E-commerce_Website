@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import auth from '../middlewares/auth.js';
 import upload from '../middlewares/multer.js';
-import { createProduct, deleteProduct, getAllFeaturedProducts, getAllProducts, getAllProductsByCatId, getAllProductsByCatName, getAllProductsByPrice, getAllProductsByRating, getAllProductsBySubCatId, getAllProductsBySubCatName, getAllProductsByThirdCatId, getAllProductsByThirdCatName, getAllProductsCount, getProduct, removeImageFromCloudinary, updateProduct, uploadImages } from '../controllers/product.controller.js';
+import { createProduct, createProductFlavor, createProductWeight, deleteMultipleProducts, deleteProduct, deleteProductFlavor, deleteProductWeight, getAllFeaturedProducts, getAllProducts, getAllProductsByCatId, getAllProductsByCatName, getAllProductsByPrice, getAllProductsByRating, getAllProductsBySubCatId, getAllProductsBySubCatName, getAllProductsByThirdCatId, getAllProductsByThirdCatName, getAllProductsCount, getProduct, getProductFlavor, getProductFlavorById, getProductWeight, getProductWeightById, removeImageFromCloudinary, updateProduct, updateProductFlavor, updateProductWeight, uploadImages } from '../controllers/product.controller.js';
 
 const productRouter = Router();
 productRouter.post('/upload-images', auth, upload.array('images'), uploadImages);
 productRouter.post('/create', auth, createProduct);
+productRouter.post('/productFlavor/create', auth, createProductFlavor);
+productRouter.post('/productWeight/create', auth, createProductWeight);
 productRouter.get('/getAllProducts', getAllProducts);
 productRouter.get('/getAllProductsByCatId/:id', getAllProductsByCatId);
 productRouter.get('/getAllProductsByCatName', getAllProductsByCatName);
@@ -17,9 +19,18 @@ productRouter.get('/getAllProductsByPrice', getAllProductsByPrice);
 productRouter.get('/getAllProductsByRating', getAllProductsByRating);
 productRouter.get('/getAllProductsCount', getAllProductsCount);
 productRouter.get('/getAllFeaturedProducts', getAllFeaturedProducts);
-productRouter.delete('/:id', deleteProduct);
-productRouter.get('/:id', getProduct);
 productRouter.delete('/delete-image', auth, removeImageFromCloudinary);
+productRouter.delete('/deleteMultipleProducts', deleteMultipleProducts);
+productRouter.get('/productFlavor/get', getProductFlavor);
+productRouter.get('/productWeight/get', getProductWeight);
+productRouter.get('/productFlavor/:id', getProductFlavorById);
+productRouter.get('/productWeight/:id', getProductWeightById);
+productRouter.delete('/:id', deleteProduct);
+productRouter.delete('/productFlavor/:id', deleteProductFlavor);
+productRouter.delete('/productWeight/:id', deleteProductWeight);
+productRouter.get('/:id', getProduct);
 productRouter.put('/updateProduct/:id', auth, updateProduct);
+productRouter.put('/productFlavor/:id', auth, updateProductFlavor);
+productRouter.put('/productWeight/:id', auth, updateProductWeight);
 
 export default productRouter;

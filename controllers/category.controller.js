@@ -72,8 +72,8 @@ export async function createCategory(req, res) {
 
     imagesArr = [];
 
-    return res.status(500).json({
-      message: "Category created",
+    return res.status(200).json({
+      message: "Thêm danh mục thành công!",
       error: false,
       success: true,
       category: category,
@@ -208,7 +208,11 @@ export async function removeImageFromCloudinary(req, res) {
     );
 
     if (result) {
-      res.status(200).send(result);
+      return res.status(200).json({
+        error: false,
+        success: true,
+        message: "Hình ảnh đã được xóa!"
+      });
     }
   }
 }
@@ -280,7 +284,7 @@ export async function updateCategory(req, res) {
         {
             name: req.body.name,
             images: imagesArr.length > 0 ? imagesArr[0] : req.body.images,
-            parentId: req.body.name,
+            parentId: req.body.parentId,
             parentCatName: req.body.parentCatName,
         },
         { new: true }
@@ -300,6 +304,7 @@ export async function updateCategory(req, res) {
         error: false,
         success: true,
         category: category,
+        message: "Cập nhật danh mục thành công!",
       });
   } catch (error) {
     return res

@@ -8,7 +8,7 @@ userRouter.post('/register', registerUserController);
 userRouter.post('/verify', verifyEmailController);
 userRouter.post('/login', loginUserController);
 userRouter.get('/logout', auth, logoutUserController);
-userRouter.put('/user-avatar', auth, upload.array('avatar'), userAvatarController);
+userRouter.post('/user-avatar', auth, upload.array('avatar'), userAvatarController);
 userRouter.delete('/delete-image', auth, removeImageFromCloudinary);
 userRouter.put('/:id', auth, updateUserDetails);
 userRouter.post('/forgot-password', forgotPasswordController);
