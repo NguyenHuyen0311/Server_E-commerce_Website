@@ -8,6 +8,7 @@ import generatedRefreshToken from "../utils/generatedRefreshToken.js";
 
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
+import ReviewModel from "../models/review.model.js";
 
 // Cloudinary configuration
 cloudinary.config({
@@ -719,3 +720,59 @@ export async function userDetails(req, res) {
       .json({ message: error.message || error, error: true, success: false });
   }
 }
+
+// Review Controller 
+// Add Review
+export async function addReview(req, res) {
+  try {
+    const { image, userName, review, rating, userId, productId } = req.body;
+
+    const userReview = new ReviewModel({
+      image: image,
+      userName: userName,
+      review: review,
+      rating: rating,
+      userId: userId,
+      productId: productId,
+    })
+
+    await userReview.save();
+
+    return res.status(200).json({
+      message: "Đánh giá sản phẩm thành công!",
+      error: false,
+      success: true,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Get Reviews
+export async function getReviews(req, res) {
+  try {
+    const productId = req.query.productId;
+
+    const reviews = await ReviewModel.find({ productId: productId });
+
+    if(!reviews) {
+      return res.status(400).json({
+        error: true,
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      error: false,
+      success: true,
+      reviews: reviews
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+// End Review Controller 

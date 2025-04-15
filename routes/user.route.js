@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authWithGoogle, forgotPasswordController, loginUserController, logoutUserController, refreshToken, registerUserController, removeImageFromCloudinary, resetPassword, updateUserDetails, userAvatarController, userDetails, verifyEmailController, verifyForgotPasswordOtp } from '../controllers/user.controller.js';
+import { addReview, authWithGoogle, forgotPasswordController, getReviews, loginUserController, logoutUserController, refreshToken, registerUserController, removeImageFromCloudinary, resetPassword, updateUserDetails, userAvatarController, userDetails, verifyEmailController, verifyForgotPasswordOtp } from '../controllers/user.controller.js';
 import auth from '../middlewares/auth.js';
 import upload from '../middlewares/multer.js';
 
@@ -17,5 +17,7 @@ userRouter.post('/verify-forgot-password-otp', verifyForgotPasswordOtp);
 userRouter.post('/reset-password', resetPassword);
 userRouter.post('/refresh-token', refreshToken);
 userRouter.get('/user-details', auth, userDetails);
+userRouter.get('/get-review', getReviews);
+userRouter.post('/add-review', auth, addReview);
 
 export default userRouter;
