@@ -1,12 +1,24 @@
 import CartProductModel from "../models/cartProduct.model.js";
 
-import UserModel from "../models/user.model.js";
-
 // Add Product To Cart
 export async function addToCartItemController(req, res) {
   try {
     const userId = req.userId?.id;
-    const { productId } = req.body;
+    const {
+      productTitle,
+      image,
+      rating,
+      price,
+      oldPrice,
+      discount,
+      flavor,
+      weight,
+      quantity,
+      subTotal,
+      productId,
+      countInStock,
+      brand
+    } = req.body;
 
     if (!productId) {
       return res.status(402).json({
@@ -23,30 +35,32 @@ export async function addToCartItemController(req, res) {
 
     if (checkItemCart) {
       return res.status(400).json({
-        message: "Item already in the cart",
+        message: "Sản phẩm đã có trong giỏ hàng!",
       });
     }
 
     const cartItem = new CartProductModel({
-      quantity: 1,
-      userId: userId,
+      productTitle: productTitle,
+      image: image,
+      rating: rating,
+      price: price,
+      oldPrice: oldPrice,
+      discount: discount,
+      quantity: quantity,
+      flavor: flavor,
+      weight: weight,
+      subTotal: subTotal,
       productId: productId,
+      countInStock: countInStock,
+      userId: userId,
+      brand: brand
     });
 
     const save = await cartItem.save();
 
-    const updateCartUser = await UserModel.updateOne(
-      { _id: userId },
-      {
-        $push: {
-          shopping_cart: productId,
-        },
-      }
-    );
-
     return res.status(200).json({
       data: save,
-      message: "Item add successfully",
+      message: "Thêm sản phẩm vào giỏ thành công!",
       error: false,
       success: true,
     });
@@ -62,12 +76,12 @@ export async function getCartItemController(req, res) {
   try {
     const userId = req.userId?.id;
 
-    const cartItem = await CartProductModel.find({
+    const cartItems = await CartProductModel.find({
       userId: userId,
-    }).populate("productId");
+    });
 
-    return res.status(402).json({
-      data: cartItem,
+    return res.status(200).json({
+      data: cartItems,
       error: false,
       success: true,
     });
@@ -83,7 +97,7 @@ export async function updateCartItemQtyController(req, res) {
   try {
     const userId = req.userId?.id;
 
-    const { _id, quantity } = req.body;
+    const { _id, quantity, subTotal } = req.body;
 
     if (!_id || !quantity) {
       return res.status(400).json({
@@ -98,11 +112,13 @@ export async function updateCartItemQtyController(req, res) {
       },
       {
         quantity: quantity,
-      }
+        subTotal: subTotal,
+      },
+      { new: true }
     );
 
-    return res.status(400).json({
-      message: "Update cart successfully",
+    return res.status(200).json({
+      message: "Đã cập nhật lại số lượng sản phẩm!",
       success: true,
       error: false,
       data: updateCartItem,
@@ -118,18 +134,18 @@ export async function updateCartItemQtyController(req, res) {
 export async function deleteCartItemQtyController(req, res) {
   try {
     const userId = req.userId?.id;
-    const { _id, productId } = req.body;
+    const { id } = req.params;
 
-    if (!_id) {
+    if (!id) {
       return res.status(400).json({
-        message: "Please provide _id",
+        message: "Please provide id",
         error: true,
         success: false,
       });
     }
 
     const deleteCartItem = await CartProductModel.deleteOne({
-      _id: _id,
+      _id: id,
       userId: userId,
     });
 
@@ -141,23 +157,8 @@ export async function deleteCartItemQtyController(req, res) {
       });
     }
 
-    const user = await UserModel.findOne({
-      _id: userId,
-    });
-
-    const cartItems = user?.shopping_cart;
-
-    const updatedUserCart = [
-      ...cartItems.slice(0, cartItems.indexOf(productId)),
-      ...cartItems.slice(cartItems.indexOf(productId) + 1),
-    ];
-
-    user.shopping_cart = updatedUserCart;
-
-    await user.save();
-
-    return res.status(400).json({
-      message: "Item removed",
+    return res.status(200).json({
+      message: "Đã xóa sản phẩm khỏi giỏ hàng!",
       error: false,
       success: true,
       data: deleteCartItem,
