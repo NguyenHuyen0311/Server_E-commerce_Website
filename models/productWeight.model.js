@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const productWeightSchema = mongoose.Schema(
   {
     name: {
-      type: Number,
+      type: String,
       required: true,
     },
     dateCreated: {

@@ -92,12 +92,12 @@ export async function getCartItemController(req, res) {
   }
 }
 
-// Update Quantity Cart Item
-export async function updateCartItemQtyController(req, res) {
+// Update Cart Item
+export async function updateCartItemController(req, res) {
   try {
     const userId = req.userId?.id;
 
-    const { _id, quantity, subTotal } = req.body;
+    const { _id, quantity, subTotal, flavor, weight } = req.body;
 
     if (!_id || !quantity) {
       return res.status(400).json({
@@ -113,12 +113,14 @@ export async function updateCartItemQtyController(req, res) {
       {
         quantity: quantity,
         subTotal: subTotal,
+        flavor: flavor !== undefined ? flavor : '',
+        weight: weight !== undefined ? weight : ''
       },
       { new: true }
     );
 
     return res.status(200).json({
-      message: "Đã cập nhật lại số lượng sản phẩm!",
+      message: "Đã cập nhật lại sản phẩm!",
       success: true,
       error: false,
       data: updateCartItem,
@@ -162,6 +164,24 @@ export async function deleteCartItemQtyController(req, res) {
       error: false,
       success: true,
       data: deleteCartItem,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Empty Cart 
+export async function emptyCartController(req, res) {
+  try {
+    const userId = req.params.id;
+    
+    await CartProductModel.deleteMany({ userId: userId })
+
+    return res.status(200).json({
+      error: false,
+      success: true,
     });
   } catch (error) {
     return res

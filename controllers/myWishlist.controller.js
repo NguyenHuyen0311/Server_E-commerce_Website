@@ -41,7 +41,7 @@ export async function addToMyWishlistController(req, res) {
     const save = await myWishlist.save();
 
     return res.status(200).json({
-      message: "The product added in the my wishlist",
+      message: "Đã thêm sản phẩm vào danh sách yêu thích!",
       error: false,
       success: true,
     });
@@ -76,7 +76,7 @@ export async function deleteFromMyWishlistController(req, res) {
     }
 
     return res.status(200).json({
-      message: "The item removed from my wishlist!",
+      message: "Đã xóa sản phẩm ra khỏi danh sách yêu thích!",
       error: false,
       success: true,
     });

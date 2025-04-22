@@ -169,3 +169,30 @@ export async function updateAddressController(req, res) {
     });
   }
 }
+
+// Get Single Address
+export async function getSingleAddressController(req, res) {
+  try {
+    const id = req.params?.id;
+
+    const address = await AddressModel.findOne({ _id: id });
+
+    if (!address || address.length === 0) {
+      return res.status(402).json({
+        message: "Không tìm thấy địa chỉ!",
+        error: true,
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      address: address,
+      error: false,
+      success: true,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}

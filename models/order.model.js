@@ -2,22 +2,35 @@ import mongoose from "mongoose";
 
 const orderSchema = mongoose.Schema(
   {
-      userId: {
-          type: mongoose.Schema.ObjectId,
-          ref: "User"
-      },
-    orderId: {
-      type: String,
-      required: [true, "Provide orderId"],
-      unique: true
-    },
-    productId: {
+    userId: {
         type: mongoose.Schema.ObjectId,
-      ref: "product"
+        ref: "User"
     },
-    product_details: {
-        name: String,
-        image: Array
+    products: [
+      {
+        productId: {
+          type: String
+        },
+        productTitle: {
+          type: String
+        },
+        quantity: {
+          type: Number
+        },
+        price: {
+          type: Number
+        },
+        image: {
+          type: String
+        },
+        subTotal: {
+          type: Number
+        },
+      }
+    ],
+    order_status: {
+      type: String,
+      default: "Chờ xác nhận"
     },
     paymentId: {
         type: String,
@@ -30,10 +43,6 @@ const orderSchema = mongoose.Schema(
     delivery_address: {
         type: mongoose.Schema.ObjectId,
         ref: "address"
-    },
-    subTotalAmount: {
-        type: Number,
-        default: 0
     },
     totalAmount: {
         type: Number,
