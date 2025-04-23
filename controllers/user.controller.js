@@ -721,6 +721,30 @@ export async function userDetails(req, res) {
   }
 }
 
+// Get all users 
+export async function getAllUsers(req, res) {
+  try {
+    const users = await UserModel.find();
+
+    if(!users) {
+      return res.status(400).json({
+        error: true,
+        success: false
+      })
+    }
+
+    return res.status(200).json({
+      users: users,
+      error: false,
+      success: true,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
 // Review Controller 
 // Add Review
 export async function addReview(req, res) {
@@ -768,6 +792,30 @@ export async function getReviews(req, res) {
       error: false,
       success: true,
       reviews: reviews
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+// Get all Reviews 
+export async function getAllReviews(req, res) {
+  try {
+    const reviews = await ReviewModel.find();
+
+    if(!reviews) {
+      return res.status(400).json({
+        error: true,
+        success: false
+      })
+    }
+
+    return res.status(200).json({
+      reviews: reviews,
+      error: false,
+      success: true,
     });
   } catch (error) {
     return res
