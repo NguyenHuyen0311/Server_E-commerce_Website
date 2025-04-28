@@ -27,6 +27,7 @@ import {
   getProductWeight,
   getProductWeightById,
   removeImageFromCloudinary,
+  searchProductController,
   sortBy,
   updateProduct,
   updateProductFlavor,
@@ -64,6 +65,8 @@ productRouter.get("/getAllProductsByPrice", getAllProductsByPrice);
 productRouter.get("/getAllProductsByRating", getAllProductsByRating);
 productRouter.get("/getAllProductsCount", getAllProductsCount);
 productRouter.get("/getAllFeaturedProducts", getAllFeaturedProducts);
+
+productRouter.post("/search", searchProductController);
 
 productRouter.delete("/delete-image", auth, removeImageFromCloudinary);
 productRouter.delete("/deleteMultipleProducts", deleteMultipleProducts);

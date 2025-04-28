@@ -1154,7 +1154,7 @@ export async function filters(req, res) {
 
 const sortItems = (products, sortBy, order) => {
   return products.sort((a, b) => {
-    if(sortBy === "name") {
+    if (sortBy === "name") {
       return order === "asc"
         ? a.name.localeCompare(b.name)
         : b.name.localeCompare(a.name);
@@ -1165,7 +1165,9 @@ const sortItems = (products, sortBy, order) => {
     }
 
     if (sortBy === "discount") {
-      return order === "asc" ? a.discount - b.discount : b.discount - a.discount;
+      return order === "asc"
+        ? a.discount - b.discount
+        : b.discount - a.discount;
     }
 
     if (sortBy === "createdAt") {
@@ -1188,6 +1190,46 @@ export async function sortBy(req, res) {
     success: true,
     products: sortedItems,
     page: 0,
-    totalPages: 0
-  })
+    totalPages: 0,
+  });
+}
+
+export async function searchProductController(req, res) {
+  try {
+    const { query, page, limit } = req.body;
+
+    if (!query) {
+      return res.status(404).json({
+        message: "Query is required!",
+        error: true,
+        success: false,
+      });
+    }
+
+    const products = await ProductModel.find({
+      $or: [
+        { name: { $regex: query, $options: "i" } },
+        { brand: { $regex: query, $options: "i" } },
+        { catName: { $regex: query, $options: "i" } },
+        { subCatName: { $regex: query, $options: "i" } },
+        { thirdSubCatName: { $regex: query, $options: "i" } },
+      ],
+    })
+      .populate("category");
+      
+    const total = await products?.length;
+
+    return res.status(200).json({
+      error: false,
+      success: true,
+      products: products,
+      total: 1,
+      page: parseInt(page),
+      totalPages: 1,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message || error, error: true, success: false });
+  }
 }
