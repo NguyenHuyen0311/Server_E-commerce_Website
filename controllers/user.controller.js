@@ -86,6 +86,38 @@ export async function registerUserController(req, res) {
   }
 }
 
+// Admin registration controller
+export const registerAdminController = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // kiểm tra trống
+    if (!name || !email || !password)
+      return res.status(400).json({ error: true, message: 'Thiếu trường bắt buộc' });
+
+    // email đã tồn tại?
+    if (await UserModel.findOne({ email }))
+      return res.status(409).json({ error: true, message: 'Email đã tồn tại' });
+
+    // hash mật khẩu
+    const salt = await bcryptjs.genSalt(10);
+    const hashPassword = await bcryptjs.hash(password, salt);
+
+    // *** GÁN ROLE = "ADMIN" ***
+    await UserModel.create({
+      name,
+      email,
+      password: hashPassword,
+      role: 'ADMIN',          // <----- quan trọng
+      verify_email: true,     // thường admin được Active ngay
+    });
+
+    res.json({ success: true, message: 'Tạo tài khoản ADMIN thành công' });
+  } catch (err) {
+    res.status(500).json({ error: true, message: err.message });
+  }
+};
+
 // Email verification controller
 export async function verifyEmailController(req, res) {
   try {
@@ -283,6 +315,35 @@ export async function loginUserController(req, res) {
       .json({ message: error.message || error, error: true, success: false });
   }
 }
+
+// Admin login controller
+export const loginAdminController = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await UserModel.findOne({ email });
+
+    // Không tìm thấy hoặc không phải ADMIN
+    if (!user || user.role !== 'ADMIN')
+      return res.status(401).json({ error: true, message: 'Không có quyền đăng nhập Admin' });
+
+    const ok = await bcryptjs.compare(password, user.password);
+    if (!ok)
+      return res.status(401).json({ error: true, message: 'Sai mật khẩu' });
+
+    // cấp token
+    const accessToken  = await generateAccessToken(user._id);
+    const refreshToken = await generatedRefreshToken(user._id);
+
+    res.json({
+      success: true,
+      message: 'Đăng nhập Admin thành công',
+      data: { accessToken, refreshToken },
+    });
+  } catch (err) {
+    res.status(500).json({ error: true, message: err.message });
+  }
+};
 
 // User logout controller
 export async function logoutUserController(req, res) {
@@ -582,23 +643,9 @@ export async function verifyForgotPasswordOtp(req, res) {
 // Reset password
 export async function resetPassword(req, res) {
   try {
-    const { email, newPassword, oldPassword, confirmPassword } = req.body;
+    const { email, newPassword, oldPassword, confirmPassword, actionType } = req.body;
 
-    const user = await UserModel.findOne({ email: email });
-
-    if (user?.signUpWithGoogle === false) {
-      if (!email || !newPassword || !confirmPassword || !oldPassword) {
-        return res.status(400).json({
-          message: "Vui lòng cung cấp đầy đủ thông tin!",
-        });
-      }
-    } else {
-      if (!email || !newPassword || !confirmPassword) {
-        return res.status(400).json({
-          message: "Vui lòng cung cấp đầy đủ thông tin!",
-        });
-      }
-    }
+    const user = await UserModel.findOne({ email });
 
     if (!user) {
       return res.status(400).json({
@@ -608,13 +655,26 @@ export async function resetPassword(req, res) {
       });
     }
 
-    if (user?.signUpWithGoogle === false) {
+    // Nếu người dùng không dùng Google đăng nhập
+    if (user.signUpWithGoogle === false && actionType !== "forgot-password") {
+      if (!email || !newPassword || !confirmPassword || !oldPassword) {
+        return res.status(400).json({
+          message: "Vui lòng cung cấp đầy đủ thông tin!",
+        });
+      }
+
       const checkPassword = await bcryptjs.compare(oldPassword, user.password);
       if (!checkPassword) {
         return res.status(400).json({
           message: "Mật khẩu cũ sai!",
           error: true,
           success: false,
+        });
+      }
+    } else {
+      if (!email || !newPassword || !confirmPassword) {
+        return res.status(400).json({
+          message: "Vui lòng cung cấp đầy đủ thông tin!",
         });
       }
     }
@@ -640,9 +700,11 @@ export async function resetPassword(req, res) {
       success: true,
     });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: error.message || error, error: true, success: false });
+    return res.status(500).json({
+      message: error.message || error,
+      error: true,
+      success: false,
+    });
   }
 }
 

@@ -15,6 +15,7 @@ import addressRouter from './routes/address.route.js';
 import homeSliderRouter from './routes/homeSlider.route.js';
 import blogRouter from './routes/blog.route.js';
 import orderRouter from './routes/order.route.js';
+import adminRouter from './routes/admin.route.js';
 
 const app = express();
 app.use(cors());
@@ -35,6 +36,7 @@ app.get("/", (request, response) => {
 })
 
 app.use("/api/user", userRouter);
+app.use("/api/admin", adminRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/product", productRouter);
 app.use("/api/cart", cartRouter);

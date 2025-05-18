@@ -1,6 +1,16 @@
 import OrderModel from "../models/order.model.js";
 import ProductModel from "../models/product.model.js";
 import UserModel from "../models/user.model.js";
+import crypto from "crypto";
+import moment from "moment";
+import querystring from "qs";
+
+const vnp_TmnCode = process.env.VNP_TMN_CODE;
+const vnp_HashSecret = process.env.VNP_HASH_SECRET;
+const vnp_Url = process.env.VNP_URL;
+const port = process.env.PORT;
+const vnp_ReturnUrl = `http://localhost:${port}/api/order/vnpay-return`;
+const vnp_IpnUrl = `http://localhost:${port}/api/order/vnpay-ipn`;
 
 // Create order
 export async function createOrderController(req, res) {
@@ -28,9 +38,14 @@ export async function createOrderController(req, res) {
       await ProductModel.findByIdAndUpdate(
         req.body.products[i].productId,
         {
-          countInStock: parseInt(
-            req.body.products[i].countInStock - req.body.products[i].quantity
-          ),
+          countInStock:
+            req.body.products[i].countInStock &&
+            !isNaN(req.body.products[i].countInStock)
+              ? parseInt(
+                  req.body.products[i].countInStock -
+                    req.body.products[i].quantity
+                )
+              : 0,
         },
         { new: true }
       );
@@ -370,74 +385,74 @@ export async function totalUsersController(req, res) {
       if (users[i]?._id?.month === 1) {
         monthlyUsers[0] = {
           name: "Tháng 1",
-          TotalUsers: users[i].count
-        }
+          TotalUsers: users[i].count,
+        };
       }
       if (users[i]?._id?.month === 2) {
         monthlyUsers[1] = {
           name: "Tháng 2",
-          TotalUsers: users[i].count
-        }
+          TotalUsers: users[i].count,
+        };
       }
       if (users[i]?._id?.month === 3) {
-      monthlyUsers[2] = {
+        monthlyUsers[2] = {
           name: "Tháng 3",
-          TotalUsers: users[i].count
-        }
+          TotalUsers: users[i].count,
+        };
       }
       if (users[i]?._id?.month === 4) {
-      monthlyUsers[3] = {
+        monthlyUsers[3] = {
           name: "Tháng 4",
-          TotalUsers: users[i].count
-        }
+          TotalUsers: users[i].count,
+        };
       }
       if (users[i]?._id?.month === 5) {
-      monthlyUsers[4] = {
+        monthlyUsers[4] = {
           name: "Tháng 5",
-          TotalUsers: users[i].count
-        }
+          TotalUsers: users[i].count,
+        };
       }
       if (users[i]?._id?.month === 6) {
-      monthlyUsers[5] = {
+        monthlyUsers[5] = {
           name: "Tháng 6",
-          TotalUsers: users[i].count
-        }
+          TotalUsers: users[i].count,
+        };
       }
       if (users[i]?._id?.month === 7) {
-      monthlyUsers[6] = {
+        monthlyUsers[6] = {
           name: "Tháng 7",
-          TotalUsers: users[i].count
-        }
+          TotalUsers: users[i].count,
+        };
       }
       if (users[i]?._id?.month === 8) {
-      monthlyUsers[7] = {
+        monthlyUsers[7] = {
           name: "Tháng 8",
-          TotalUsers: users[i].count
-        }
+          TotalUsers: users[i].count,
+        };
       }
       if (users[i]?._id?.month === 9) {
-      monthlyUsers[8] = {
+        monthlyUsers[8] = {
           name: "Tháng 9",
-          TotalUsers: users[i].count
-        }
+          TotalUsers: users[i].count,
+        };
       }
       if (users[i]?._id?.month === 10) {
         monthlyUsers[9] = {
           name: "Tháng 10",
-          TotalUsers: users[i].count
-        }
+          TotalUsers: users[i].count,
+        };
       }
       if (users[i]?._id?.month === 11) {
         monthlyUsers[10] = {
           name: "Tháng 11",
-          TotalUsers: users[i].count
-        }
+          TotalUsers: users[i].count,
+        };
       }
       if (users[i]?._id?.month === 12) {
         monthlyUsers[11] = {
           name: "Tháng 12",
-          TotalUsers: users[i].count
-        }
+          TotalUsers: users[i].count,
+        };
       }
     }
 
@@ -450,5 +465,163 @@ export async function totalUsersController(req, res) {
     return res
       .status(500)
       .json({ message: error.message || error, error: true, success: false });
+  }
+}
+
+function sortObject(obj) {
+  const sorted = {};
+  const keys = Object.keys(obj).sort();
+  for (const key of keys) {
+    if (obj[key]) {
+      sorted[key] = obj[key];
+    }
+  }
+  return sorted;
+}
+
+// Tạo URL thanh toán VNPay
+export const createVnpayUrlController = async (req, res) => {
+  try {
+    let date = new Date();
+    let createDate = moment(date).format("YYYYMMDDHHmmss");
+
+    let ipAddr =
+      req.headers["x-forwarded-for"] ||
+      req.socket?.remoteAddress ||
+      "127.0.0.1";
+
+    let orderId = `${moment(date).format("DDHHmmss")}${Math.floor(
+      Math.random() * 1000
+    )}`;
+    let amount = req.body.totalAmount;
+    if (!amount || amount <= 0) {
+      return res
+        .status(400)
+        .json({ error: true, message: "Số tiền không hợp lệ" });
+    }
+    let bankCode = req.body.bankCode;
+    let locale = "vn" || req.body.language;
+    let currentCode = "VND";
+    let vnp_Params = {};
+    vnp_Params["vnp_Version"] = "2.1.0";
+    vnp_Params["vnp_Command"] = "pay";
+    vnp_Params["vnp_TmnCode"] = vnp_TmnCode;
+    vnp_Params["vnp_Amount"] = amount * 100;
+    vnp_Params["vnp_CurrCode"] = currentCode;
+    vnp_Params["vnp_TxnRef"] = orderId;
+    vnp_Params["vnp_OrderInfo"] = `Thanh toan don hang ${orderId}`;
+    vnp_Params["vnp_OrderType"] = "other";
+    vnp_Params["vnp_Locale"] = locale;
+    vnp_Params["vnp_ReturnUrl"] = vnp_ReturnUrl;
+    vnp_Params["vnp_IpAddr"] = ipAddr;
+    vnp_Params["vnp_CreateDate"] = createDate;
+    if (bankCode !== null && bankCode !== "") {
+      vnp_Params["vnp_BankCode"] = bankCode;
+    }
+
+    vnp_Params = sortObject(vnp_Params);
+    let signData = querystring.stringify(vnp_Params, { encode: false });
+    let hmac = crypto.createHmac("sha512", vnp_HashSecret);
+    let secureHash = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+    vnp_Params["vnp_SecureHash"] = secureHash;
+    let vnpUrl =
+      vnp_Url + "?" + querystring.stringify(vnp_Params, { encode: false });
+
+    console.log("VNPAY URL:", vnpUrl);
+    console.log("VNPay Params:", vnp_Params);
+    console.log("SignData:", signData);
+    console.log("SecureHash:", secureHash);
+
+    return res.status(200).json({
+      error: false,
+      paymentUrl: vnpUrl,
+    });
+  } catch (err) {
+    console.error("VNPay URL creation error:", err);
+    return res.status(500).json({
+      error: true,
+      message: "Không tạo được liên kết thanh toán.",
+      details: err.message,
+    });
+  }
+};
+
+// Xử lý kết quả trả về từ VNPay
+export async function vnpayReturnController(req, res) {
+  const vnp_Params = req.query;
+  const secureHash = vnp_Params["vnp_SecureHash"];
+  delete vnp_Params["vnp_SecureHash"];
+  delete vnp_Params["vnp_SecureHashType"];
+
+  const orderId = req.query.vnp_TxnRef;
+  const order = await OrderModel.findById(orderId);
+
+  if (!order) {
+    return res.status(404).send("Đơn hàng không tồn tại.");
+  }
+
+  const sortedParams = querystring.stringify(vnp_Params, { encode: false });
+  const signData = crypto
+    .createHmac("sha512", vnp_HashSecret)
+    .update(sortedParams)
+    .digest("hex");
+
+  if (secureHash === signData) {
+    const transactionStatus = vnp_Params.vnp_TransactionStatus;
+    const orderId = vnp_Params.vnp_TxnRef;
+
+    if (transactionStatus === "00") {
+      await OrderModel.findByIdAndUpdate(orderId, {
+        payment_status: "Đã thanh toán qua thẻ",
+        order_status: "Đã thanh toán",
+      });
+
+      return res.redirect("/payment-success");
+    } else {
+      return res.redirect("/payment-failed");
+    }
+  } else {
+    return res.redirect("/payment-failed");
+  }
+}
+
+// Xử lý IPN (Thông báo giao dịch VNPay)
+export async function vnpayIpnController(req, res) {
+  const vnp_Params = req.query;
+  const secureHash = vnp_Params["vnp_SecureHash"];
+  delete vnp_Params["vnp_SecureHash"];
+  delete vnp_Params["vnp_SecureHashType"];
+
+  const sortedParams = querystring.stringify(vnp_Params, { encode: false });
+  const signData = crypto
+    .createHmac("sha512", vnp_HashSecret)
+    .update(sortedParams)
+    .digest("hex");
+
+  if (secureHash === signData) {
+    const orderId = vnp_Params.vnp_TxnRef;
+    const transactionStatus = vnp_Params.vnp_TransactionStatus;
+
+    if (transactionStatus === "00") {
+      await OrderModel.findByIdAndUpdate(orderId, {
+        payment_status: true,
+        order_status: "Đã thanh toán",
+      });
+
+      return res.status(200).json({
+        RspCode: "00",
+        Message: "Confirm Success",
+      });
+    } else {
+      return res.status(200).json({
+        RspCode: "01",
+        Message: "Transaction Failed",
+      });
+    }
+  } else {
+    return res.status(200).json({
+      RspCode: "97",
+      Message: "Invalid signature",
+    });
   }
 }
